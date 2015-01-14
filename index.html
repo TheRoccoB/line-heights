@@ -1,0 +1,274 @@
+<html>
+<head>
+    <title>Line Height Testing</title>
+    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+    <script src="webfont.js"></script>
+
+    <script>
+        var configuration = {
+            text: 'Hello',
+            sizes : ['9px','10px','11px','12px','13px','14px','16px', '18px','20px','24px','36px','48px','64px','72px','96px','110px','127px'],
+            fonts: [
+                {family:'arial'},
+                {family:'helvetica'},
+                {family:'courier'},
+                {family:'times'},
+                {family:'verdana'},
+                {
+                    family:'Roboto',
+                    url:'http://fonts.googleapis.com/css?family=Roboto'
+                },
+                {
+                    family: "Oswald",
+                    url: 'http://fonts.googleapis.com/css?family=Oswald'
+                },
+                {
+                    family: "Open Sans Condensed",
+                    url: 'http://fonts.googleapis.com/css?family=Open%20Sans%20Condensed:300'
+                },
+                {
+                    family: "Roboto Slab",
+                    url: 'http://fonts.googleapis.com/css?family=Roboto%20Slab:400'
+                },
+                {
+                    family: "Droid Serif",
+                    url: 'http://fonts.googleapis.com/css?family=Droid%20Serif:400'
+                },
+                {
+                    family: "Roboto Condensed",
+                    url: 'http://fonts.googleapis.com/css?family=Roboto%20Condensed:400'
+                },
+                {
+                    family: "Raleway",
+                    url: 'http://fonts.googleapis.com/css?family=Raleway:400'
+                },
+                {
+                    family: "Bangers",
+                    url: 'http://fonts.googleapis.com/css?family=Bangers:400'
+                },
+                {
+                    family: "Permanent Marker",
+                    url: 'http://fonts.googleapis.com/css?family=Permanent%20Marker:400'
+                },
+                {
+                    family: "Droid Sans Mono",
+                    url: 'http://fonts.googleapis.com/css?family=Droid%20Sans%20Mono:400'
+                }
+            ]
+        };
+
+        $(function(){
+
+            var asJson = {};
+
+            function buildPage(){
+                var sizes = configuration.sizes;
+                var fonts = configuration.fonts;
+                var rows = '', chambers = '', options = '';
+                for (var i=0; i<sizes.length; i++){
+                    rows += '<tr class="odd" id="r' + sizes[i] + '"><th scope="row">' + sizes[i] + '</th><td class="lh">-</td><td class="ne">-</td></tr>\n';
+                    chambers += '<div style="" id="t' + sizes[i] + '" class="wrap"><div class="test" style="font-size:' + sizes[i] + ';">' + configuration.text + '</div></div>';
+                }
+
+                for (var i=0; i<fonts.length; i++){
+                    options += '<option>' + fonts[i].family + '</option>\n';
+                }
+
+                $('.tableHeader').after($(rows));
+                $('#chamber').append($(chambers));
+                $('#menu').append($(options));
+            }
+
+            function menuChanged(family){
+                var sizes = configuration.sizes;
+                asJson[family] = {};
+                for (var i=0;i<sizes.length; i++){
+                    var $chamber = $('#t' + sizes[i] + ' .test');
+                    var $lineBoxHeight = $('#r' + sizes[i] + ' .lh');
+                    var $normalEquivalent = $('#r' + sizes[i] + ' .ne');
+                    $chamber.css('font-family', family);
+                    var height = $chamber[0].offsetHeight;
+                    $lineBoxHeight.text(height);
+
+                    //javascript hack parseInt('99px') === 99
+                    var normalEquiv = (height / parseInt(sizes[i])).toFixed(3);
+                    $normalEquivalent.text(normalEquiv);
+
+                    asJson[family][sizes[i]] = normalEquiv;
+                }
+            }
+
+             //http://stackoverflow.com/questions/985272/jquery-selecting-text-in-an-element-akin-to-highlighting-with-your-mouse
+            function selectAllTextInElement(element) {
+                var range, selection;
+                element = $(element);
+
+                if (element.length > 0) {
+
+                    element = element.get(0);
+
+                    if (document.body.createTextRange) {
+                        range = document.body.createTextRange();
+                        range.moveToElementText(element);
+                        range.select();
+                    } else if (window.getSelection) {
+                        selection = window.getSelection();
+                        range = document.createRange();
+                        range.selectNodeContents(element);
+                        selection.removeAllRanges();
+                        selection.addRange(range);
+                    }
+
+                }
+            }
+
+            buildPage();
+
+            var webfontArray = [];
+            for (var i=0; i<configuration.fonts.length; i++){
+                var font = configuration.fonts[i];
+                if (font.url){
+
+                    $('head').append($("<link href='" + font.url + "' rel='stylesheet' type='text/css'>"));
+                    $('#webfonts').append($('<div><span class=' + font.family.replace(' ', '_') + ' style="font-family:' +font.family+ ',arial">' +font.family+ '</span></div>'));
+                    webfontArray.push(configuration.fonts[i].family);
+                }
+            }
+
+            //using https://developers.google.com/fonts/docs/webfont_loader
+            WebFont.load({
+                custom: {
+                    families: webfontArray
+                },
+                timeout:5000,
+                active:function(){
+
+                    for (var i=0; i<configuration.fonts.length; i++){
+                        menuChanged(configuration.fonts[i].family);
+                    }
+                    menuChanged(configuration.fonts[0].family);
+                    //generateJson();
+                    $('#json pre').text(JSON.stringify(asJson, undefined, 2));
+                    console.log('web font loaded');
+                }
+            });
+
+
+//            setTimeout(function(){
+//                for (var i=0; i<webfontArray.length; i++){
+//                    menuChanged(webfontArray[i]);
+//                }
+//                generateJson();
+//                $('#json pre').text(JSON.stringify(asJson, undefined, 2));
+//            }, 5000);
+
+            $('#menu').change(function(){
+                menuChanged($(this).val());
+            });
+
+            $('#selectAll').click(function(){
+                selectAllTextInElement($('#json pre')[0]);
+            });
+        });
+    </script>
+    <style type="text/css" media="all">
+
+        form {
+            position: relative;
+            z-index: 2;
+        }
+        form table {
+            border-bottom: 1px solid #DDD;
+        }
+        form table th, form table td {
+            text-align: left; padding: 0.1em 0.5em;
+        }
+        form table tr:nth-child(odd) {
+            background: #DDD;
+        }
+        form table tr:nth-child(even) {
+            background: #EEE;
+        }
+
+        #chamber {
+            font-family: Webdings;
+            font-size: 10px;
+            line-height: normal;
+            position: absolute;
+            z-index: 1;
+            top: 0;
+            right: 0;
+        }
+
+
+        #chamber .wrap {
+            border: 1px solid #AAA;
+            background: #EEE url('data:image/gif;base64,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') 0 0 no-repeat;
+            padding: 20px;
+            margin: 10px;
+            width: 40em;
+            white-space: nowrap;
+        }
+
+
+        #chamber .wrap .test {
+            background: url('data:image/gif;base64,R0lGODlhMgBkAKIAAAAAAP///6Wjo9XT07+9vf///wAAAAAAACH5BAEAAAUALAAAAAAyAGQAAAOCKLrc/jC2QKu9OOvNu/9gKI5kaZ5oqq5s677hIM90bd94XsN87//AoHBILBpVuqRySTs6n9CodEqtBpnY7M7K7Xq/4LD4oy1jx+i0es1uiwjwuHxOr9vvc7d+z+/7iWaBSX+EhYaHiBWCizeJjo+QkVWMlDOSl5iZmiuVlZufoKGiCQA7') 0 0 repeat;
+            padding-top: 1px;
+            overflow: hidden;
+            border-left: 0;
+        }
+
+        #json{
+            width:400px;
+            height:500px;
+            background-color:#eee;
+            border:1px solid black;
+            overflow:auto;
+        }
+    </style>
+
+</head>
+
+<body>
+
+<h2>Line Height Metrics</h2>
+<form action="#" method="">
+    <table cellspacing="0" id="readout">
+        <tr>
+            <th scope="row">Font face</th>
+            <td colspan="2">
+
+                <select id="menu">
+                </select>
+
+            </td>
+        </tr>
+        <tr class="tableHeader">
+            <th></th>
+            <th scope="col">Height of line box</th>
+            <th scope="col"><code>normal</code> equivalent</th>
+        </tr>
+    </table>
+</form>
+
+<h2>Web Fonts</h2>
+<div id="webfonts">
+
+</div>
+<div style="font-size:12px;color:red">Ensure that these web fonts render properly before trusting the JSON data.</div>
+
+<h2>JSON:</h2>
+<button id="selectAll">Select All</button></div>
+<div id='json'>
+    <pre>
+
+    </pre>
+</div>
+
+<div id="chamber">
+</div>
+
+</body>
+
+
+</html>
